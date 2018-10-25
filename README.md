@@ -1,6 +1,22 @@
 # 多线程下载B站视频
 
-待完成：
-- 分段视频merge
-- playlist的支持
-- B站版权电影支持
+Installing:
+```bash
+pip3 install bs4
+pip3 install requests
+pip3 install progressbar
+brew install ffmpeg
+```
+
+Get started:
+```bash
+chmod +x bilipy.py
+./bilipy https://www.bilibili.com/video/av11268454
+```
+
+To be completed：
+- ~~clips merge~~
+- support for sharpness selection
+- support for playlist
+- support for movie
+- _write function for windows
