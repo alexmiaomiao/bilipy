@@ -16,6 +16,7 @@ chmod +x bilipy.py
 
 To be completed：
 - ~~clips merge~~
+- handling timeout exceptions
 - support for sharpness selection
 - support for playlist
 - support for movie
