@@ -21,7 +21,7 @@ class Downloader():
         self.headers = headers
         self.thread_num = thread_num
 
-    def show(self):
+    def _show(self):
         with progressbar.ProgressBar(max_value=size) as bar:
             while True:
                 bar.update(self.dsize)
@@ -29,12 +29,21 @@ class Downloader():
                     return
                 time.sleep(0.5)
 
-    def inner(self, k):
+    def _download(self, k):
         raise NotImplementedError()
 
+    def _write(self, r, name, start):
+        with open(name, 'wb+') as f:
+            f.seek(start)
+            for data in r.iter_content(chunk_size=1024*1024):
+                f.write(data)
+                with self.dsize_lock:
+                    self.dsize += len(data)
+
+
     def start(self):
-        threads = [threading.Thread(target=self.inner, args=(i,)) for i in range(self.thread_num)]
-        threads.append(threading.Thread(target=self.show))
+        threads = [threading.Thread(target=self._download, args=(i,)) for i in range(self.thread_num)]
+        threads.append(threading.Thread(target=self._show))
         for t in threads:
             t.start()
         for t in threads:
@@ -45,11 +54,11 @@ class SingleDownloader(Downloader):
     def __init__(self, durl, agent, name, size, headers, thread_num = 10):
         super().__init__(agent, name, size, headers, thread_num)
         self.durl = durl
+        self.frag = self.size // self.thread_num
 
-    def inner(self, k):
-        frag = self.size // self.thread_num
-        start = frag * k
-        end = frag * (k + 1) - 1
+    def _download(self, k):
+        start = self.frag * k
+        end = self.frag * (k + 1) - 1
         headers = self.headers.copy()
         if k == self.thread_num - 1:
             headers['range'] = 'bytes=%s-' % start
@@ -59,12 +68,7 @@ class SingleDownloader(Downloader):
 
         with self.agent.get(url, headers=headers, stream=True, verify=False) as r:
             if r.status_code == 200 or 206:
-                with open(self.name, 'wb+') as f:
-                    f.seek(start)
-                    for data in r.iter_content(chunk_size=1024*1024):
-                        f.write(data)
-                        with self.dsize_lock:
-                            self.dsize += len(data)
+                self._write(r, self.name, start)
 
 
 class MultiDownloader(Downloader):
@@ -77,7 +81,7 @@ class MultiDownloader(Downloader):
             self.durl_thread_num = thread_num // len(durls)
         self.thread_num = self.durl_thread_num * len(durls)
 
-    def inner(self, k):
+    def _download(self, k):
         order = k // self.durl_thread_num
         frag = self.durls[order]['size'] // self.durl_thread_num
         dk = k % self.durl_thread_num
@@ -92,14 +96,9 @@ class MultiDownloader(Downloader):
 
         with self.agent.get(url, headers=headers, stream=True, verify=False) as r:
             if r.status_code == 200 or 206:
-                with open(self.name + '.' + str(order), 'wb+') as f:
-                    f.seek(start)
-                    for data in r.iter_content(chunk_size=1024*1024):
-                        f.write(data)
-                        with self.dsize_lock:
-                            self.dsize += len(data)
+                self._write(r, self.name + '.' + str(order), start)
 
-    def merge(self):
+    def _merge(self):
         pass
 
 
