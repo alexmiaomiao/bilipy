@@ -66,7 +66,11 @@ class SingleDownloader(Downloader):
             headers['range'] = 'bytes=%s-' % start
         else:
             headers['range'] = 'bytes=%s-%s' % (start, end)
-        url = self.durl['backup_url'][0]
+
+        if "backup_url" in self.durl:
+            url = self.durl['backup_url'][0]
+        else:
+            url = self.durl['url']
 
         with self.agent.get(url, headers=headers, stream=True, verify=False) as r:
             if r.status_code == 200 or 206:
