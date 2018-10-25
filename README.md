@@ -11,7 +11,7 @@ brew install ffmpeg
 Get started:
 ```bash
 chmod +x bilipy.py
-./bilipy https://www.bilibili.com/video/av11268454
+./bilipy.py https://www.bilibili.com/video/av11268454
 ```
 
 To be completed：
